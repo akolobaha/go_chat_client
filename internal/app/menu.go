@@ -81,19 +81,21 @@ func navigateMenu() error {
 		return navigateMenu()
 
 	} else if answers.Choice == questionEnterChat {
-		var existingChatUser string
+		var chatId string
 		err = survey.AskOne(&survey.Input{
 			Message: "Введите айди чата для начала общения или введите return для выхода в предыдущее меню: ",
-		}, &existingChatUser)
+		}, &chatId)
 		if err != nil {
 			return fmt.Errorf("ошибка во время опроса: %v", err)
 		}
 
-		if existingChatUser == "" {
+		if chatId == "" {
 			return navigateMenu()
 		}
 
-		fmt.Printf("Вы вошли в чат с: %s\n", existingChatUser)
+		for {
+			renderMessageFrame(chatId)
+		}
 
 	}
 
