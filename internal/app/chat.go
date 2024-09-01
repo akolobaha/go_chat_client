@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/gorilla/websocket"
 	"go_chat_client/internal/connection"
 	"time"
@@ -31,6 +30,8 @@ type Message struct {
 	Message string `json:"msg"`
 	ChatId  string `json:"ch_id"`
 }
+
+var inputBuffer string
 
 func createChat(newChatUserId string) {
 	chatReq := NewChatReq{
@@ -90,24 +91,7 @@ func newMessage(text string, chatId string) {
 
 }
 
-func renderMessageFrame(chatId string) {
-	var err error
-	var message string
-
-	fmt.Printf("Вводите сообщения для отправки:\n")
-	fmt.Println(">")
-	fmt.Println(chatId, getFormattedTime())
-
-	err = survey.AskOne(&survey.Input{}, &message)
-	if err != nil {
-		fmt.Println("Error survey.AskOne:", err)
-	}
-	fmt.Println(">")
-	newMessage(message, chatId)
-}
-
-func getFormattedTime() string {
+func GetFormattedTime() string {
 	currentTime := time.Now()
-
 	return currentTime.Format("02.01.2006 15:04")
 }

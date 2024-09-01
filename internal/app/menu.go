@@ -1,11 +1,28 @@
 package app
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/gorilla/websocket"
 	"github.com/spf13/cobra"
 	"go_chat_client/internal/connection"
+	"os"
+	"time"
 )
+
+type RawRequest struct {
+	Type string     `json:"type"`
+	Data ReqMessage `json:"data"`
+}
+
+type ReqMessage struct {
+	MsgID  string    `json:"msg_id"`
+	Body   string    `json:"body"`
+	TDate  time.Time `json:"t_date"`
+	FromID string    `json:"from_id"`
+}
 
 const questionNewChat = "Создать новый чат с другим пользователем"
 const questionEnterChat = "Войти в чат с пользователем"
@@ -93,11 +110,64 @@ func navigateMenu() error {
 			return navigateMenu()
 		}
 
-		for {
-			renderMessageFrame(chatId)
-		}
+		go ReadMessages()
 
+		fmt.Printf("Вводите сообщения для отправки:\n")
+
+		renderOutputMessageFrame(chatId)
 	}
 
 	return nil
+}
+
+func renderOutputMessageFrame(chatId string) {
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		inputBufferString, err := reader.ReadString('\n')
+		fmt.Print("\033[F")
+		fmt.Print("\033[K")
+
+		fmt.Println(">")
+		fmt.Println(GetFormattedTime())
+		fmt.Print(inputBufferString)
+
+		if err != nil {
+			fmt.Println("Error survey.AskOne:", err)
+		}
+		fmt.Println(">")
+		newMessage(inputBufferString, chatId)
+	}
+}
+
+func ReadMessages() {
+	for {
+		typ, message, err := connection.WebSocket.ReadMessage()
+
+		if err != nil {
+			fmt.Println("ws error", err)
+		}
+		switch typ {
+
+		case websocket.TextMessage, websocket.BinaryMessage:
+			var req RawRequest
+			if err = json.Unmarshal(message, &req); err != nil {
+				fmt.Println("ws error", err)
+				continue
+			}
+
+			RenderInputMessageFrame(req.Data)
+		default:
+			fmt.Println("smth went wrong")
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func RenderInputMessageFrame(message ReqMessage) {
+	fmt.Print("\033[F")
+	fmt.Println(">")
+	fmt.Println(message.FromID, GetFormattedTime())
+	fmt.Println(message.Body)
+	fmt.Println(">")
 }
